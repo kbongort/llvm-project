@@ -2279,7 +2279,7 @@ static ExprResult checkArraySize(Sema &S, Expr *&ArraySize,
   } Diagnoser(VLADiag, VLAIsError);
 
   ExprResult R =
-      S.VerifyIntegerConstantExpression(ArraySize, &SizeVal, Diagnoser);
+      S.VerifyIntegerConstantExpression(ArraySize, &SizeVal, Diagnoser, Sema::AllowFold);
   if (Diagnoser.IsVLA)
     return ExprResult();
   return R;

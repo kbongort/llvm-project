@@ -4337,6 +4337,11 @@ def analyzer_disable_all_checks : Flag<["-"], "analyzer-disable-all-checks">,
   HelpText<"Disable all static analyzer checks">,
   MarshallingInfoFlag<"AnalyzerOpts->DisableAllCheckers">;
 
+def analyzer_tidy_checker : Separate<["-"], "analyzer-tidy-checker">,
+  HelpText<"Dummy option for compatibility with Xcode's toolchain.">;
+def analyzer_tidy_checker_EQ : Joined<["-"], "analyzer-tidy-checker=">,
+  Alias<analyzer_tidy_checker>;
+
 def analyzer_checker_help : Flag<["-"], "analyzer-checker-help">,
   HelpText<"Display the list of analyzer checkers that are available">,
   MarshallingInfoFlag<"AnalyzerOpts->ShowCheckerHelp">;

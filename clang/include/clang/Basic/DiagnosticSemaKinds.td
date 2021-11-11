@@ -139,7 +139,7 @@ def err_vla_decl_has_extern_linkage : Error<
   "variable length array declaration cannot have 'extern' linkage">;
 def ext_vla_folded_to_constant : ExtWarn<
   "variable length array folded to constant array as an extension">,
-  InGroup<GNUFoldingConstant>;
+  InGroup<GNUFoldingConstant>, DefaultIgnore;
 def err_vla_unsupported : Error<
   "variable length arrays are not supported for the current target">;
 def note_vla_unsupported : Note<
