@@ -2563,7 +2563,8 @@ ASTReader::ASTReadResult
 ASTReader::ReadControlBlock(ModuleFile &F,
                             SmallVectorImpl<ImportedModule> &Loaded,
                             const ModuleFile *ImportedBy,
-                            unsigned ClientLoadCapabilities) {
+                            unsigned ClientLoadCapabilities,
+                            bool IsRebuild) {
   BitstreamCursor &Stream = F.Stream;
 
   if (llvm::Error Err = Stream.EnterSubBlock(CONTROL_BLOCK_ID)) {
@@ -2830,7 +2831,7 @@ ASTReader::ReadControlBlock(ModuleFile &F,
         // Load the AST file.
         auto Result = ReadASTCore(ImportedFile, ImportedKind, ImportLoc, &F,
                                   Loaded, StoredSize, StoredModTime,
-                                  StoredSignature, Capabilities);
+                                  StoredSignature, Capabilities, IsRebuild);
 
         // If we diagnosed a problem, produce a backtrace.
         bool recompilingFinalized =
@@ -4201,7 +4202,8 @@ ASTReader::ASTReadResult ASTReader::ReadAST(StringRef FileName,
                                             ModuleKind Type,
                                             SourceLocation ImportLoc,
                                             unsigned ClientLoadCapabilities,
-                                            SmallVectorImpl<ImportedSubmodule> *Imported) {
+                                            SmallVectorImpl<ImportedSubmodule> *Imported,
+                                            bool IsRebuild) {
   llvm::SaveAndRestore<SourceLocation>
     SetCurImportLocRAII(CurrentImportLoc, ImportLoc);
   llvm::SaveAndRestore<Optional<ModuleKind>> SetCurModuleKindRAII(
@@ -4234,7 +4236,7 @@ ASTReader::ASTReadResult ASTReader::ReadAST(StringRef FileName,
   switch (ASTReadResult ReadResult =
               ReadASTCore(FileName, Type, ImportLoc,
                           /*ImportedBy=*/nullptr, Loaded, 0, 0,
-                          ASTFileSignature(), ClientLoadCapabilities)) {
+                          ASTFileSignature(), ClientLoadCapabilities, IsRebuild)) {
   case Failure:
   case Missing:
   case OutOfDate:
@@ -4486,14 +4488,15 @@ ASTReader::ReadASTCore(StringRef FileName,
                        SmallVectorImpl<ImportedModule> &Loaded,
                        off_t ExpectedSize, time_t ExpectedModTime,
                        ASTFileSignature ExpectedSignature,
-                       unsigned ClientLoadCapabilities) {
+                       unsigned ClientLoadCapabilities,
+                       bool IsRebuild) {
   ModuleFile *M;
   std::string ErrorStr;
   ModuleManager::AddModuleResult AddResult
     = ModuleMgr.addModule(FileName, Type, ImportLoc, ImportedBy,
                           getGeneration(), ExpectedSize, ExpectedModTime,
                           ExpectedSignature, readASTFileSignature,
-                          M, ErrorStr);
+                          M, ErrorStr, IsRebuild);
 
   switch (AddResult) {
   case ModuleManager::AlreadyLoaded:
@@ -4577,7 +4580,7 @@ ASTReader::ReadASTCore(StringRef FileName,
     switch (Entry.ID) {
     case CONTROL_BLOCK_ID:
       HaveReadControlBlock = true;
-      switch (ReadControlBlock(F, Loaded, ImportedBy, ClientLoadCapabilities)) {
+      switch (ReadControlBlock(F, Loaded, ImportedBy, ClientLoadCapabilities, IsRebuild)) {
       case Success:
         // Check that we didn't try to load a non-module AST file as a module.
         //

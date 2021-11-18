@@ -1300,7 +1300,8 @@ static bool readASTAfterCompileModule(CompilerInstance &ImportingInstance,
   ASTReader::ASTReadResult ReadResult =
       ImportingInstance.getASTReader()->ReadAST(
           ModuleFileName, serialization::MK_ImplicitModule, ImportLoc,
-          ModuleLoadCapabilities);
+          ModuleLoadCapabilities, nullptr, true);
+
   if (ReadResult == ASTReader::Success)
     return true;
 
@@ -1397,6 +1398,9 @@ static bool compileModuleAndReadASTBehindLock(
 
     // Read the module that was just written by someone else.
     bool OutOfDate = false;
+
+    auto &modCache = ImportingInstance.getASTReader()->getModuleManager().getModuleCache();
+    modCache.setRebuiltExternally(ModuleFileName);
     if (readASTAfterCompileModule(ImportingInstance, ImportLoc, ModuleNameLoc,
                                   Module, ModuleFileName, &OutOfDate))
       return true;

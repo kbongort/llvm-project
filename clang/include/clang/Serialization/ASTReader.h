@@ -1289,11 +1289,13 @@ private:
                             SmallVectorImpl<ImportedModule> &Loaded,
                             off_t ExpectedSize, time_t ExpectedModTime,
                             ASTFileSignature ExpectedSignature,
-                            unsigned ClientLoadCapabilities);
+                            unsigned ClientLoadCapabilities,
+                            bool IsRebuild);
   ASTReadResult ReadControlBlock(ModuleFile &F,
                                  SmallVectorImpl<ImportedModule> &Loaded,
                                  const ModuleFile *ImportedBy,
-                                 unsigned ClientLoadCapabilities);
+                                 unsigned ClientLoadCapabilities,
+                                 bool IsRebuild);
   static ASTReadResult ReadOptionsBlock(
       llvm::BitstreamCursor &Stream, unsigned ClientLoadCapabilities,
       bool AllowCompatibleConfigurationMismatch, ASTReaderListener &Listener,
@@ -1566,7 +1568,8 @@ public:
   ASTReadResult ReadAST(StringRef FileName, ModuleKind Type,
                         SourceLocation ImportLoc,
                         unsigned ClientLoadCapabilities,
-                        SmallVectorImpl<ImportedSubmodule> *Imported = nullptr);
+                        SmallVectorImpl<ImportedSubmodule> *Imported = nullptr,
+                        bool IsRebuild = false);
 
   /// Make the entities in the given module and any of its (non-explicit)
   /// submodules visible to name lookup.

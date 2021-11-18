@@ -36,9 +36,11 @@ class InMemoryModuleCache : public llvm::RefCountedBase<InMemoryModuleCache> {
     /// cache).
     bool IsFinal = false;
 
+    int ReadTime = 0;
+
     PCM() = default;
-    PCM(std::unique_ptr<llvm::MemoryBuffer> Buffer)
-        : Buffer(std::move(Buffer)) {}
+    PCM(std::unique_ptr<llvm::MemoryBuffer> Buffer, int ReadTime)
+        : Buffer(std::move(Buffer)), ReadTime(ReadTime) {}
   };
 
   /// Cache of buffers.
@@ -65,7 +67,8 @@ public:
   /// \post state is Tentative
   /// \return a reference to the buffer as a convenience.
   llvm::MemoryBuffer &addPCM(llvm::StringRef Filename,
-                             std::unique_ptr<llvm::MemoryBuffer> Buffer);
+                             std::unique_ptr<llvm::MemoryBuffer> Buffer,
+                             int ReadTime);
 
   /// Store a just-built PCM under the Filename.
   ///
@@ -100,6 +103,11 @@ public:
   ///
   /// \return true iff state is ToBuild.
   bool shouldBuildPCM(llvm::StringRef Filename) const;
+
+  int getPCMReadTime(llvm::StringRef Filename) const;
+
+  // Returns true if successful
+  bool setRebuiltExternally(llvm::StringRef Filename);
 };
 
 } // end namespace clang

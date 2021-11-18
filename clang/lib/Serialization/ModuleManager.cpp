@@ -107,7 +107,8 @@ ModuleManager::addModule(StringRef FileName, ModuleKind Type,
                          ASTFileSignature ExpectedSignature,
                          ASTFileSignatureReader ReadSignature,
                          ModuleFile *&Module,
-                         std::string &ErrorStr) {
+                         std::string &ErrorStr,
+                         bool IsRebuild) {
   Module = nullptr;
 
   // Look for the file entry. This only fails if the expected size or
@@ -196,12 +197,27 @@ ModuleManager::addModule(StringRef FileName, ModuleKind Type,
     NewModule->Buffer = Buffer;
     // As above, the file descriptor is no longer needed.
     Entry->closeFile();
-  } else if (getModuleCache().shouldBuildPCM(FileName)) {
-    // Report that the module is out of date, since we tried (and failed) to
-    // import it earlier.
-    Entry->closeFile();
-    return OutOfDate;
   } else {
+    if (IsRebuild) {
+      // Nuke the old module.
+      getModuleCache().setRebuiltExternally(FileName);
+    } else if (getModuleCache().shouldBuildPCM(FileName)) {
+      llvm::vfs::Status Status;
+      FileMgr.getNoncachedStatValue(FileName, Status);
+      time_t statModTime = llvm::sys::toTimeT(Status.getLastModificationTime());
+      int PCMReadTime = getModuleCache().getPCMReadTime(FileName);
+
+      if (PCMReadTime >= statModTime) {
+        // Report that the module is out of date, since we tried (and failed) to
+        // import it earlier.
+        Entry->closeFile();
+        return OutOfDate;
+      } else {
+        getModuleCache().setRebuiltExternally(FileName);
+      }
+    }
+    time_t ReadTime = std::time(nullptr);
+
     // Open the AST file.
     llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> Buf((std::error_code()));
     if (FileName == "-") {
@@ -223,7 +239,7 @@ ModuleManager::addModule(StringRef FileName, ModuleKind Type,
       return Missing;
     }
 
-    NewModule->Buffer = &getModuleCache().addPCM(FileName, std::move(*Buf));
+    NewModule->Buffer = &getModuleCache().addPCM(FileName, std::move(*Buf), ReadTime);
   }
 
   // Initialize the stream.

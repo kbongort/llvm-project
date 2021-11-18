@@ -23,8 +23,9 @@ InMemoryModuleCache::getPCMState(llvm::StringRef Filename) const {
 
 llvm::MemoryBuffer &
 InMemoryModuleCache::addPCM(llvm::StringRef Filename,
-                            std::unique_ptr<llvm::MemoryBuffer> Buffer) {
-  auto Insertion = PCMs.insert(std::make_pair(Filename, std::move(Buffer)));
+                            std::unique_ptr<llvm::MemoryBuffer> Buffer,
+                            int ReadTime) {
+  auto Insertion = PCMs.insert(std::make_pair(Filename, PCM(std::move(Buffer), ReadTime)));
   assert(Insertion.second && "Already has a PCM");
   return *Insertion.first->second.Buffer;
 }
@@ -56,6 +57,13 @@ bool InMemoryModuleCache::shouldBuildPCM(llvm::StringRef Filename) const {
   return getPCMState(Filename) == ToBuild;
 }
 
+int InMemoryModuleCache::getPCMReadTime(llvm::StringRef Filename) const {
+  auto I = PCMs.find(Filename);
+  if (I == PCMs.end())
+    return 0;
+  return I->second.ReadTime;
+}
+
 bool InMemoryModuleCache::tryToDropPCM(llvm::StringRef Filename) {
   auto I = PCMs.find(Filename);
   assert(I != PCMs.end() && "PCM to remove is unknown...");
@@ -77,4 +85,9 @@ void InMemoryModuleCache::finalizePCM(llvm::StringRef Filename) {
   auto &PCM = I->second;
   assert(PCM.Buffer && "Trying to finalize a dropped PCM...");
   PCM.IsFinal = true;
+}
+
+
+bool InMemoryModuleCache::setRebuiltExternally(llvm::StringRef Filename) {
+  return PCMs.erase(Filename);
 }

@@ -3401,6 +3401,10 @@ std::string CompilerInvocation::getModuleHash(DiagnosticsEngine &Diags) const {
     #undef ENUM_DIAGOPT
   }
 
+  for (const auto &path : this->getFrontendOpts().ModuleMapFiles) {
+    code = hash_combine(code, path);
+  }
+
   // Extend the signature with the user build path.
   code = hash_combine(code, hsOpts.ModuleUserBuildPath);
 
